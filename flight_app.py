@@ -1,6 +1,9 @@
 import streamlit as st
 
 st.title("Flight Itinerary Scorer")
+origin = st.text_input("From", placeholder="BNA")
+destination = st.text_input("To", placeholder="DEN")
+travel_date = st.date_input("Travel date")
 
 def score_flight(price, stops, duration, connection, preference):
     score = 100
@@ -131,6 +134,8 @@ if st.button("Compare Flights"):
         key=lambda flight: flight["score"],
         reverse=True
     )
+    st.write(f"### {origin} → {destination}")
+    st.write(f"Travel date: {travel_date}")
 
     st.header("Flight Rankings")
 
