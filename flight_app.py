@@ -68,6 +68,34 @@ def search_flights(origin, destination, travel_date):
         "Accept": "application/json"
     }
 
+    data = {
+        "data": {
+            "slices": [
+                {
+                    "origin": origin,
+                    "destination": destination,
+                    "departure_date": str(travel_date)
+                }
+            ],
+            "passengers": [
+                {
+                    "type": "adult"
+                }
+            ],
+            "cabin_class": "economy"
+        }
+    }
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=data,
+        params={"return_offers": "true"}
+    )
+
+    return response
+
+
 def parse_duffel_offers(response_json):
     parsed_flights = []
 
@@ -104,46 +132,18 @@ def parse_duffel_offers(response_json):
 
         stops = len(segments) - 1
 
-        origin = slice_data["origin"]["iata_code"]
-        destination = slice_data["destination"]["iata_code"]
+        origin_code = slice_data["origin"]["iata_code"]
+        destination_code = slice_data["destination"]["iata_code"]
 
         parsed_flights.append({
             "airline": airline,
-            "route": f"{origin}-{destination}",
+            "route": f"{origin_code}-{destination_code}",
             "price": price,
             "stops": stops,
             "duration": duration
         })
 
     return parsed_flights
-
-
-    data = {
-        "data": {
-            "slices": [
-                {
-                    "origin": origin,
-                    "destination": destination,
-                    "departure_date": str(travel_date)
-                }
-            ],
-            "passengers": [
-                {
-                    "type": "adult"
-                }
-            ],
-            "cabin_class": "economy"
-        }
-    }
-
-    response = requests.post(
-        url,
-        headers=headers,
-        json=data,
-        params={"return_offers": "true"}
-    )
-
-    return response
 
 
 st.subheader("Real Flight Search Test")
@@ -164,24 +164,35 @@ if st.button("Test Real Flight Search"):
         if response.status_code == 201:
             st.success("Duffel connection works!")
 
-    response_json = response.json()
+            response_json = response.json()
 
-    real_flights = parse_duffel_offers(response_json)
+            real_flights = parse_duffel_offers(response_json)
 
-    for flight in real_flights:
-        st.write(
-            f"**{flight['airline']} "
-            f"{flight['route']}**"
-        )
+            for flight in real_flights:
+                st.write(
+                    f"**{flight['airline']} "
+                    f"{flight['route']}**"
+                )
 
-        st.write(f"Price: ${flight['price']:.2f}")
-        st.write(f"Stops: {flight['stops']}")
+                st.write(
+                    f"Price: ${flight['price']:.2f}"
+                )
 
-        st.write(
-            f"Duration: {flight['duration']:.2f} hours"
-        )
+                st.write(
+                    f"Stops: {flight['stops']}"
+                )
 
-        st.divider() 
+                st.write(
+                    f"Duration: "
+                    f"{flight['duration']:.2f} hours"
+                )
+
+                st.divider()
+
+        else:
+            st.error("Flight search failed")
+            st.write(response.text)
+
 
 st.divider()
 
@@ -270,15 +281,19 @@ for i in range(number_of_flights):
 
 
 if st.button("Compare Flights"):
-
     flights_sorted = sorted(
         flights,
         key=lambda flight: flight["score"],
         reverse=True
     )
 
-    st.write(f"### {origin.upper()} → {destination.upper()}")
-    st.write(f"Travel date: {travel_date}")
+    st.write(
+        f"### {origin.upper()} → {destination.upper()}"
+    )
+
+    st.write(
+        f"Travel date: {travel_date}"
+    )
 
     st.header("Flight Rankings")
 
@@ -286,10 +301,13 @@ if st.button("Compare Flights"):
         flights_sorted,
         start=1
     ):
-        rating = get_rating(flight["score"])
+        rating = get_rating(
+            flight["score"]
+        )
 
         st.write(
-            f"**{rank}. {flight['airline']} "
+            f"**{rank}. "
+            f"{flight['airline']} "
             f"{flight['route']}** — "
             f"{flight['score']:.1f}/100 — "
             f"{rating}"
@@ -305,11 +323,13 @@ if st.button("Compare Flights"):
     )
 
     st.write(
-        f"Price: **${best_flight['price']:.2f}**"
+        f"Price: "
+        f"**${best_flight['price']:.2f}**"
     )
 
     st.write(
-        f"Stops: **{best_flight['stops']}**"
+        f"Stops: "
+        f"**{best_flight['stops']}**"
     )
 
     st.write(
@@ -333,28 +353,30 @@ if st.button("Compare Flights"):
     )
 
     st.write(
-        f"Preference: **{preference}**"
+        f"Preference: "
+        f"**{preference}**"
     )
 
     if preference == "Cheapest":
         st.write(
-            "- This flight scored best mainly because of price."
+            "- This flight scored best mainly "
+            "because of price."
         )
 
     elif preference == "Shortest Travel Time":
         st.write(
-            "- This flight scored best mainly because of travel time."
+            "- This flight scored best mainly "
+            "because of travel time."
         )
 
     elif preference == "Fewest Stops":
         st.write(
-            "- This flight scored best mainly because it had fewer stops."
+            "- This flight scored best mainly "
+            "because it had fewer stops."
         )
 
     else:
         st.write(
-            "- This flight had the best overall balance "
-            "of price, stops, and travel time."
-        )
-            "of price, stops, and travel time."
+            "- This flight had the best overall "
+            "balance of price, stops, and travel time."
         )
