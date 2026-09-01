@@ -68,6 +68,56 @@ def search_flights(origin, destination, travel_date):
         "Accept": "application/json"
     }
 
+def parse_duffel_offers(response_json):
+    parsed_flights = []
+
+    offers = response_json["data"]["offers"]
+
+    for offer in offers:
+        slice_data = offer["slices"][0]
+        segments = slice_data["segments"]
+
+        airline = offer["owner"]["name"]
+        price = float(offer["total_amount"])
+
+        duration_text = slice_data["duration"]
+
+        hours = 0
+        minutes = 0
+
+        if "H" in duration_text:
+            hours = int(
+                duration_text.split("T")[1].split("H")[0]
+            )
+
+        if "M" in duration_text:
+            if "H" in duration_text:
+                minutes = int(
+                    duration_text.split("H")[1].replace("M", "")
+                )
+            else:
+                minutes = int(
+                    duration_text.split("T")[1].replace("M", "")
+                )
+
+        duration = hours + (minutes / 60)
+
+        stops = len(segments) - 1
+
+        origin = slice_data["origin"]["iata_code"]
+        destination = slice_data["destination"]["iata_code"]
+
+        parsed_flights.append({
+            "airline": airline,
+            "route": f"{origin}-{destination}",
+            "price": price,
+            "stops": stops,
+            "duration": duration
+        })
+
+    return parsed_flights
+
+
     data = {
         "data": {
             "slices": [
@@ -113,12 +163,25 @@ if st.button("Test Real Flight Search"):
 
         if response.status_code == 201:
             st.success("Duffel connection works!")
-            st.json(response.json())
 
-        else:
-            st.error("Flight search failed")
-            st.write(response.text)
+    response_json = response.json()
 
+    real_flights = parse_duffel_offers(response_json)
+
+    for flight in real_flights:
+        st.write(
+            f"**{flight['airline']} "
+            f"{flight['route']}**"
+        )
+
+        st.write(f"Price: ${flight['price']:.2f}")
+        st.write(f"Stops: {flight['stops']}")
+
+        st.write(
+            f"Duration: {flight['duration']:.2f} hours"
+        )
+
+        st.divider() 
 
 st.divider()
 
@@ -291,5 +354,7 @@ if st.button("Compare Flights"):
     else:
         st.write(
             "- This flight had the best overall balance "
+            "of price, stops, and travel time."
+        )
             "of price, stops, and travel time."
         )
