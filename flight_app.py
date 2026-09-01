@@ -1,4 +1,6 @@
 import streamlit as st
+import requests
+duffel_token = st.secrets["DUFFEL_TOKEN"]
 
 st.title("Flight Itinerary Scorer")
 origin = st.text_input("From", placeholder="BNA")
