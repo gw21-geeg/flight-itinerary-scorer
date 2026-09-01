@@ -2,6 +2,22 @@ import streamlit as st
 import requests
 duffel_token = st.secrets["DUFFEL_TOKEN"]
 
+if st.button("Test Real Flight Search"):
+    response = search_flights(
+        origin.upper(),
+        destination.upper(),
+        travel_date
+    )
+
+    st.write("Status:", response.status_code)
+
+    if response.status_code == 201:
+        st.success("Duffel connection works!")
+        st.json(response.json())
+    else:
+        st.error("Flight search failed")
+        st.write(response.text)
+
 st.title("Flight Itinerary Scorer")
 origin = st.text_input("From", placeholder="BNA")
 destination = st.text_input("To", placeholder="DEN")
@@ -52,6 +68,43 @@ def get_rating(score):
         return "Fair"
     else:
         return "Poor"
+    
+def search_flights(origin, destination, travel_date):
+    url = "https://api.duffel.com/air/offer_requests"
+
+    headers = {
+        "Authorization": f"Bearer {duffel_token}",
+        "Duffel-Version": "v2",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    data = {
+        "data": {
+            "slices": [
+                {
+                    "origin": origin,
+                    "destination": destination,
+                    "departure_date": str(travel_date)
+                }
+            ],
+            "passengers": [
+                {
+                    "type": "adult"
+                }
+            ],
+            "cabin_class": "economy"
+        }
+    }
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=data,
+        params={"return_offers": "true"}
+    )
+
+    return response
 
 
 number_of_flights = st.number_input(
