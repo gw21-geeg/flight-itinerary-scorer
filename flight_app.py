@@ -1,27 +1,14 @@
 import streamlit as st
 import requests
+
 duffel_token = st.secrets["DUFFEL_TOKEN"]
 
-if st.button("Test Real Flight Search"):
-    response = search_flights(
-        origin.upper(),
-        destination.upper(),
-        travel_date
-    )
-
-    st.write("Status:", response.status_code)
-
-    if response.status_code == 201:
-        st.success("Duffel connection works!")
-        st.json(response.json())
-    else:
-        st.error("Flight search failed")
-        st.write(response.text)
-
 st.title("Flight Itinerary Scorer")
+
 origin = st.text_input("From", placeholder="BNA")
 destination = st.text_input("To", placeholder="DEN")
 travel_date = st.date_input("Travel date")
+
 
 def score_flight(price, stops, duration, connection, preference):
     score = 100
@@ -59,6 +46,7 @@ def score_flight(price, stops, duration, connection, preference):
 
     return score
 
+
 def get_rating(score):
     if score >= 80:
         return "Excellent"
@@ -68,7 +56,8 @@ def get_rating(score):
         return "Fair"
     else:
         return "Poor"
-    
+
+
 def search_flights(origin, destination, travel_date):
     url = "https://api.duffel.com/air/offer_requests"
 
@@ -107,6 +96,34 @@ def search_flights(origin, destination, travel_date):
     return response
 
 
+st.subheader("Real Flight Search Test")
+
+if st.button("Test Real Flight Search"):
+    if not origin or not destination:
+        st.warning("Enter both airport codes first.")
+
+    else:
+        response = search_flights(
+            origin.upper(),
+            destination.upper(),
+            travel_date
+        )
+
+        st.write("Status:", response.status_code)
+
+        if response.status_code == 201:
+            st.success("Duffel connection works!")
+            st.json(response.json())
+
+        else:
+            st.error("Flight search failed")
+            st.write(response.text)
+
+
+st.divider()
+
+st.header("Manual Flight Comparison")
+
 number_of_flights = st.number_input(
     "How many flights do you want to compare?",
     min_value=2,
@@ -114,9 +131,15 @@ number_of_flights = st.number_input(
     value=2,
     step=1
 )
+
 preference = st.selectbox(
     "What matters most to you?",
-    ["Balanced", "Cheapest", "Shortest Travel Time", "Fewest Stops"]
+    [
+        "Balanced",
+        "Cheapest",
+        "Shortest Travel Time",
+        "Fewest Stops"
+    ]
 )
 
 flights = []
@@ -169,7 +192,7 @@ for i in range(number_of_flights):
         preference
     )
 
-    flights.append({
+    flight = {
         "flight_number": i + 1,
         "airline": airline,
         "route": route,
@@ -178,8 +201,9 @@ for i in range(number_of_flights):
         "duration": duration,
         "connection": connection,
         "score": score
-    })
+    }
 
+    flights.append(flight)
 
 
 if st.button("Compare Flights"):
@@ -189,7 +213,8 @@ if st.button("Compare Flights"):
         key=lambda flight: flight["score"],
         reverse=True
     )
-    st.write(f"### {origin} → {destination}")
+
+    st.write(f"### {origin.upper()} → {destination.upper()}")
     st.write(f"Travel date: {travel_date}")
 
     st.header("Flight Rankings")
@@ -216,35 +241,55 @@ if st.button("Compare Flights"):
         f"{best_flight['route']}"
     )
 
-    st.write(f"Price: **${best_flight['price']:.2f}**")
-    st.write(f"Stops: **{best_flight['stops']}**")
+    st.write(
+        f"Price: **${best_flight['price']:.2f}**"
+    )
+
+    st.write(
+        f"Stops: **{best_flight['stops']}**"
+    )
+
     st.write(
         f"Travel time: "
         f"**{best_flight['duration']} hours**"
     )
+
     st.write(
         f"Connection: "
         f"**{best_flight['connection']} minutes**"
     )
+
     st.write(
         f"Score: "
         f"**{best_flight['score']:.1f}/100**"
     )
+
     st.write(
         f"Rating: "
         f"**{get_rating(best_flight['score'])}**"
     )
 
-    st.write(f"Preference: **{preference}**")
+    st.write(
+        f"Preference: **{preference}**"
+    )
 
     if preference == "Cheapest":
-        st.write("- This flight scored best mainly because of price.")
+        st.write(
+            "- This flight scored best mainly because of price."
+        )
 
     elif preference == "Shortest Travel Time":
-        st.write("- This flight scored best mainly because of travel time.")
+        st.write(
+            "- This flight scored best mainly because of travel time."
+        )
 
     elif preference == "Fewest Stops":
-        st.write("- This flight scored best mainly because it had fewer stops.")
+        st.write(
+            "- This flight scored best mainly because it had fewer stops."
+        )
 
     else:
-        st.write("- This flight had the best overall balance of price, stops, and travel time.")
+        st.write(
+            "- This flight had the best overall balance "
+            "of price, stops, and travel time."
+        )
